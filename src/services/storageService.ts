@@ -519,6 +519,21 @@ export const storageService = {
     return filtered;
   },
 
+  updateSavedCarparkNotes(carparkId: string, notes: string): SavedCarparkItem[] {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) return [];
+    const currentSaved = currentUser.savedCarparks || [];
+    const updated = currentSaved.map((s) => (s.carparkId === carparkId ? { ...s, notes } : s));
+    this._updateUserSavedList(currentUser.id, updated);
+    return updated;
+  },
+
+  getSavedCarparkItem(carparkId: string): SavedCarparkItem | undefined {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) return undefined;
+    return (currentUser.savedCarparks || []).find((s) => s.carparkId === carparkId);
+  },
+
   _updateUserSavedList(userId: string, savedList: SavedCarparkItem[]) {
     const allUsers = this.getAllUsers();
     const userIndex = allUsers.findIndex((u) => u.id === userId);

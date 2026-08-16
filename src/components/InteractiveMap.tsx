@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Carpark, AvailabilityLevel } from '../types/carpark';
-import { Navigation, Layers, Compass, Crosshair, Sparkles, ExternalLink, Check, Car, ChevronLeft, ChevronRight, Zap, Star, X, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Carpark, AvailabilityLevel, UserAccount } from '../types/carpark';
+import { Navigation, Layers, Compass, Crosshair, Sparkles, ExternalLink, Check, Car, ChevronLeft, ChevronRight, Zap, Star, X, ChevronDown, ChevronUp, Lock, FileText, Bell, Cloud } from 'lucide-react';
 
 interface InteractiveMapProps {
   carparks: Carpark[];
@@ -15,6 +15,7 @@ interface InteractiveMapProps {
   onToggleSave?: (carpark: Carpark) => void;
   savedCarparkIds?: string[];
   hasNavAccess?: boolean;
+  currentUser?: UserAccount | null;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -29,6 +30,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onToggleSave,
   savedCarparkIds = [],
   hasNavAccess = true,
+  currentUser,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -255,13 +257,29 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       });
 
       // Interactive on-pin Leaflet popup
+      const isAdminUser = currentUser?.isAdmin || currentUser?.role === 'admin';
+      const isPaid = isAdminUser || currentUser?.plan === 'basic' || currentUser?.plan === 'pro';
+
       const popupContainer = document.createElement('div');
-      popupContainer.className = 'p-3 font-sans min-w-[210px] max-w-[270px] text-slate-900';
+      popupContainer.className = 'p-3 font-sans min-w-[220px] max-w-[280px] text-slate-900';
       popupContainer.innerHTML = `
         <div class="flex items-center justify-between gap-1 mb-1">
-          <span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-slate-100 text-slate-700 border border-slate-200">
-            ${cp.agency}
-          </span>
+          <div class="flex items-center gap-1">
+            <span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-slate-100 text-slate-700 border border-slate-200">
+              ${cp.agency}
+            </span>
+            ${
+              isAdminUser
+                ? `<span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-400 text-slate-950 shadow-2xs">
+                    👑 Admin
+                  </span>`
+                : isPaid
+                ? `<span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ★ Unlocked
+                  </span>`
+                : ''
+            }
+          </div>
           ${
             cp.recommendationBadge
               ? `<span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-amber-100 text-amber-900 border border-amber-300">
@@ -270,12 +288,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               : ''
           }
         </div>
-        <div class="font-black text-slate-950 text-xs sm:text-sm leading-snug truncate" title="${cp.name}">
+
+        <div id="pin-popup-title-${cp.id}" class="font-black text-slate-950 text-xs sm:text-sm leading-snug truncate hover:text-sky-600 cursor-pointer" title="${cp.name}">
           ${cp.name}
         </div>
         <div class="text-[11px] text-slate-500 truncate mb-2 mt-0.5">${cp.address}</div>
         
-        <div class="grid grid-cols-3 gap-1 py-1.5 px-2 bg-slate-50 border border-slate-200/80 rounded-xl text-center text-xs mb-2.5">
+        <div class="grid grid-cols-3 gap-1 py-1.5 px-2 bg-slate-50 border border-slate-200/80 rounded-xl text-center text-xs mb-2">
           <div>
             <span class="text-[9px] text-slate-400 block font-bold uppercase">Rate</span>
             <span class="font-black text-slate-900 text-xs">$${cp.rates.estimatedHourlyRate.toFixed(2)}<span class="text-[9px] font-normal text-slate-400">/h</span></span>
@@ -292,16 +311,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
         </div>
 
+        <div class="text-[10px] text-slate-500 bg-sky-50/70 border border-sky-100 rounded-lg px-2 py-1 mb-2 flex items-center justify-between font-medium">
+          <span class="flex items-center gap-1 text-sky-900 font-bold">
+            <span>⚡ GPS • Cloud • Alerts</span>
+          </span>
+          <span class="text-sky-700 font-extrabold text-[9px] underline cursor-pointer" id="pin-popup-link-details-${cp.id}">View Full Info →</span>
+        </div>
+
         <div class="flex items-center gap-1.5">
-          <button id="pin-popup-nav-${cp.id}" class="flex-1 py-1.5 px-2.5 ${
+          <button id="pin-popup-nav-${cp.id}" class="flex-1 py-1.5 px-2 ${
             hasNavAccess ? 'bg-sky-600 hover:bg-sky-700' : 'bg-slate-900 hover:bg-slate-800'
           } active:scale-95 text-white font-black rounded-lg text-xs flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all">
-            <span>${hasNavAccess ? '🚗 Navigate' : '🔒 Navigate (Paid)'}</span>
+            <span>${hasNavAccess ? '🚗 GPS Nav' : '🔒 Nav (Paid)'}</span>
           </button>
           ${
             onOpenDetails
-              ? `<button id="pin-popup-details-${cp.id}" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 cursor-pointer transition-all">
-                  Details
+              ? `<button id="pin-popup-details-${cp.id}" class="flex-1 py-1.5 px-2 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 active:scale-95 text-white font-bold rounded-lg text-xs border border-slate-700 cursor-pointer transition-all flex items-center justify-center gap-1">
+                  <span>🔍 Full Details</span>
                 </button>`
               : ''
           }
@@ -320,6 +346,22 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       const detailsBtn = popupContainer.querySelector(`#pin-popup-details-${cp.id}`);
       if (detailsBtn && onOpenDetails) {
         detailsBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onOpenDetails(cp);
+        });
+      }
+
+      const linkDetails = popupContainer.querySelector(`#pin-popup-link-details-${cp.id}`);
+      if (linkDetails && onOpenDetails) {
+        linkDetails.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onOpenDetails(cp);
+        });
+      }
+
+      const titleElem = popupContainer.querySelector(`#pin-popup-title-${cp.id}`);
+      if (titleElem && onOpenDetails) {
+        titleElem.addEventListener('click', (e) => {
           e.stopPropagation();
           onOpenDetails(cp);
         });
@@ -628,9 +670,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                   <button
                     id={`map-drawer-details-btn-${activeDrawerCarpark.id}`}
                     onClick={() => onOpenDetails(activeDrawerCarpark)}
-                    className="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-700 font-bold rounded-xl border border-slate-200 transition-all text-xs whitespace-nowrap"
+                    className="py-1.5 px-3 bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-black rounded-xl border border-slate-700 transition-all text-xs whitespace-nowrap flex items-center gap-1 cursor-pointer shadow-2xs"
                   >
-                    Details
+                    <span>🔍 Full Details</span>
                   </button>
                 )}
               </div>

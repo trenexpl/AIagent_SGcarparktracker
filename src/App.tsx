@@ -687,6 +687,7 @@ export default function App() {
                     onToggleSave={handleToggleSave}
                     savedCarparkIds={savedCarparks.map((s) => s.carparkId)}
                     hasNavAccess={isPaidUser}
+                    currentUser={currentUser}
                   />
                 </div>
               ) : (
@@ -884,6 +885,18 @@ export default function App() {
           isCompared={comparedCarparks.some((c) => c.id === detailsCarpark.id)}
           onToggleCompare={handleToggleCompare}
           hasNavAccess={isPaidUser}
+          currentUser={currentUser}
+          onOpenAuth={(mode, msg) => {
+            setDetailsCarpark(null);
+            handleOpenAuth(mode, msg);
+          }}
+          onOpenPayment={(plan) => {
+            setDetailsCarpark(null);
+            handleOpenPayment(plan);
+          }}
+          onAlertSaved={(newAlert) => {
+            handleSaveAlert(newAlert);
+          }}
         />
       )}
 
