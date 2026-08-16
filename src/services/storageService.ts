@@ -28,8 +28,9 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, SubscriptionPlanDetail
     features: [
       'Live SG carpark telemetry & availability',
       'Real-time rate & distance calculator',
-      'Direct turn-by-turn navigation',
-      'Favorites: 0 spots (Upgrade to save)'
+      'Interactive map & radius exploration',
+      'Navigation & GPS directions: 🔒 Paid Plan Required',
+      'Favorites: 🔒 Paid Plan Required'
     ],
   },
   basic: {
@@ -40,6 +41,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, SubscriptionPlanDetail
     billingPeriod: 'monthly',
     maxFavorites: 5,
     features: [
+      'Full GPS turn-by-turn navigation (Google, Apple, Waze, Citymapper)',
       'Save up to 5 favorite locations',
       'Instant 1-tap navigation to saved spots',
       'Live lot availability monitoring',
@@ -57,6 +59,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, SubscriptionPlanDetail
     billingPeriod: 'monthly',
     maxFavorites: Infinity,
     features: [
+      'Unlimited GPS turn-by-turn navigation across all mapping apps',
       'Unlimited favorite locations',
       'Priority live lot alerts & notifications',
       'Direct navigation & route shortcuts',
@@ -71,11 +74,46 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, SubscriptionPlanDetail
 // Seed demo user accounts for immediate testing
 const INITIAL_DEMO_USERS: UserAccount[] = [
   {
+    id: 'user-admin-master',
+    name: 'Admin (trenexpl)',
+    email: 'trenexpl@gmail.com',
+    password: 'Test123',
+    plan: 'pro',
+    isAdmin: true,
+    role: 'admin',
+    subscriptionStartDate: new Date(Date.now() - 86400000 * 30).toISOString(),
+    subscriptionRenewsAt: new Date(Date.now() + 86400000 * 365).toISOString(),
+    lastPaymentMethod: 'Admin Master Key (Full Access)',
+    savedCarparks: [
+      {
+        id: 'saved-admin-1',
+        carparkId: 'orchard-ion',
+        carparkName: 'ION Orchard Carpark',
+        address: '2 Orchard Turn, Singapore 238801',
+        savedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        frequencyCount: 12,
+        notes: 'Admin monitor: Orchard Road core commercial hub',
+      },
+      {
+        id: 'saved-admin-2',
+        carparkId: 'mbs-shopper',
+        carparkName: 'Marina Bay Sands (South Carpark)',
+        address: '10 Bayfront Avenue, Singapore 018956',
+        savedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+        frequencyCount: 8,
+        notes: 'Admin monitor: Marina Bay & Bayfront convention node',
+      }
+    ],
+    createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
+  },
+  {
     id: 'user-demo-1',
     name: 'Sarah Tan',
     email: 'sarah.tan@driver.sg',
     password: 'password123',
     plan: 'free',
+    isAdmin: false,
+    role: 'driver',
     savedCarparks: [],
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
   },
@@ -85,6 +123,8 @@ const INITIAL_DEMO_USERS: UserAccount[] = [
     email: 'kenji.pro@driver.sg',
     password: 'password123',
     plan: 'pro',
+    isAdmin: false,
+    role: 'driver',
     subscriptionStartDate: new Date(Date.now() - 86400000 * 12).toISOString(),
     subscriptionRenewsAt: new Date(Date.now() + 86400000 * 18).toISOString(),
     lastPaymentMethod: 'Visa •••• 4242',
@@ -198,11 +238,22 @@ export const storageService = {
   getAllUsers(): UserAccount[] {
     try {
       const stored = localStorage.getItem(USERS_LIST_KEY);
-      if (!stored) {
-        localStorage.setItem(USERS_LIST_KEY, JSON.stringify(INITIAL_DEMO_USERS));
-        return INITIAL_DEMO_USERS;
+      let users: UserAccount[] = stored ? JSON.parse(stored) : INITIAL_DEMO_USERS;
+
+      // Ensure Master Admin account is always present with credentials: trenexpl@gmail.com / Test123
+      const adminIndex = users.findIndex((u) => u.email.toLowerCase() === 'trenexpl@gmail.com');
+      if (adminIndex === -1) {
+        users.unshift(INITIAL_DEMO_USERS[0]);
+        localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
+      } else {
+        // Guarantee admin role & Pro privileges
+        users[adminIndex].isAdmin = true;
+        users[adminIndex].role = 'admin';
+        users[adminIndex].plan = 'pro';
+        users[adminIndex].password = 'Test123';
       }
-      return JSON.parse(stored);
+
+      return users;
     } catch {
       return INITIAL_DEMO_USERS;
     }
@@ -230,6 +281,10 @@ export const storageService = {
       return { success: false, error: 'Name and email are required.' };
     }
 
+    if (trimmedEmail === 'trenexpl@gmail.com') {
+      return { success: false, error: 'This is the master administrator email. Please log in directly with your password.' };
+    }
+
     const allUsers = this.getAllUsers();
     const existing = allUsers.find((u) => u.email.toLowerCase() === trimmedEmail);
     if (existing) {
@@ -242,6 +297,8 @@ export const storageService = {
       email: trimmedEmail,
       password: password || 'password123',
       plan: 'free',
+      isAdmin: false,
+      role: 'driver',
       savedCarparks: [],
       createdAt: new Date().toISOString(),
     };
@@ -256,14 +313,43 @@ export const storageService = {
   logIn(email: string, password?: string): { success: boolean; user?: UserAccount; error?: string } {
     const trimmedEmail = email.trim().toLowerCase();
     const allUsers = this.getAllUsers();
-    
-    // Find matching user or auto-create if demo
+
+    // 1. Strict Master Admin credentials verification
+    if (trimmedEmail === 'trenexpl@gmail.com') {
+      if (password !== 'Test123') {
+        return {
+          success: false,
+          error: 'Invalid admin credentials. Please enter the correct password for trenexpl@gmail.com.',
+        };
+      }
+
+      let adminUser = allUsers.find((u) => u.email.toLowerCase() === 'trenexpl@gmail.com');
+      if (!adminUser) {
+        adminUser = INITIAL_DEMO_USERS[0];
+        allUsers.unshift(adminUser);
+        localStorage.setItem(USERS_LIST_KEY, JSON.stringify(allUsers));
+      } else {
+        adminUser.isAdmin = true;
+        adminUser.role = 'admin';
+        adminUser.plan = 'pro';
+        adminUser.password = 'Test123';
+      }
+
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
+      return { success: true, user: adminUser };
+    }
+
+    // 2. Standard user login
     let match = allUsers.find((u) => u.email.toLowerCase() === trimmedEmail);
 
     if (!match) {
       // If user doesn't exist, create a new free driver account smoothly
       const created = this.signUp(email.split('@')[0] || 'Driver', trimmedEmail, password);
       return created;
+    }
+
+    if (match.password && password && match.password !== password) {
+      return { success: false, error: 'Incorrect password for this account.' };
     }
 
     // Update active session
@@ -376,7 +462,7 @@ export const storageService = {
     }
 
     // 2. Requirement: Free plan user cannot save favorites (or must upgrade)
-    if (currentUser.plan === 'free') {
+    if (!currentUser.isAdmin && currentUser.role !== 'admin' && currentUser.plan === 'free') {
       return {
         success: false,
         action: 'plan_upgrade_required',
@@ -389,7 +475,7 @@ export const storageService = {
 
     // 3. Requirement: Basic plan limit of 5 locations
     const planDetails = SUBSCRIPTION_PLANS[currentUser.plan];
-    if (currentUser.plan === 'basic' && currentSaved.length >= 5) {
+    if (!currentUser.isAdmin && currentUser.role !== 'admin' && currentUser.plan === 'basic' && currentSaved.length >= 5) {
       return {
         success: false,
         action: 'plan_limit_reached',
@@ -581,6 +667,17 @@ export const storageService = {
     const comments = this.getCommunityComments().filter((c) => c.id !== commentId);
     localStorage.setItem(COMMUNITY_COMMENTS_KEY, JSON.stringify(comments));
     return comments;
+  },
+
+  /**
+   * Check whether the user has active permission to use Turn-by-Turn GPS Navigation.
+   * Navigation requires the user to be logged in AND on an active paid plan (Basic $2.99 or Pro $5.99) or Master Admin account.
+   */
+  hasNavigationAccess(user?: UserAccount | null): boolean {
+    const targetUser = user !== undefined ? user : this.getCurrentUser();
+    if (!targetUser) return false;
+    if (targetUser.isAdmin || targetUser.role === 'admin') return true;
+    return targetUser.plan === 'basic' || targetUser.plan === 'pro';
   },
 };
 

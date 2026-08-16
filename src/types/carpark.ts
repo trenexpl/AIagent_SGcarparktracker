@@ -146,6 +146,8 @@ export interface UserAccount {
   name: string;
   password?: string;
   plan: SubscriptionPlan;
+  isAdmin?: boolean;
+  role?: 'admin' | 'driver';
   subscriptionStartDate?: string;
   subscriptionRenewsAt?: string;
   lastPaymentMethod?: string;

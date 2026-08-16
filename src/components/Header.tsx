@@ -189,16 +189,16 @@ export const Header: React.FC<HeaderProps> = ({
                   id="btn-header-user-profile"
                   className="py-1 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl border border-slate-200 flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    {currentUser.name.charAt(0).toUpperCase()}
+                  <div className={`w-6 h-6 rounded-lg ${currentUser.isAdmin || currentUser.role === 'admin' ? 'bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 font-black' : 'bg-sky-600 text-white'} flex items-center justify-center text-xs font-bold shrink-0`}>
+                    {currentUser.isAdmin || currentUser.role === 'admin' ? '👑' : currentUser.name.charAt(0).toUpperCase()}
                   </div>
                   
                   <div className="text-left hidden sm:block">
-                    <div className="text-xs font-extrabold leading-tight truncate max-w-[100px]">
+                    <div className="text-xs font-extrabold leading-tight truncate max-w-[110px]">
                       {currentUser.name}
                     </div>
                     <div className="text-[10px] text-slate-500 font-medium leading-none">
-                      {currentPlan === 'pro' ? '★ Pro Unlimited' : currentPlan === 'basic' ? 'Basic ($2.99)' : 'Free Plan'}
+                      {currentUser.isAdmin || currentUser.role === 'admin' ? '👑 Admin (Full Access)' : currentPlan === 'pro' ? '★ Pro Unlimited' : currentPlan === 'basic' ? 'Basic ($2.99)' : 'Free Plan'}
                     </div>
                   </div>
 
@@ -212,19 +212,28 @@ export const Header: React.FC<HeaderProps> = ({
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsUserMenuOpen(false)} 
                     />
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in-50 zoom-in-95 duration-100">
+                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in-50 zoom-in-95 duration-100">
                       <div className="px-4 py-2 border-b border-slate-100">
-                        <div className="text-xs font-black text-slate-900">{currentUser.name}</div>
+                        <div className="text-xs font-black text-slate-900 flex items-center justify-between">
+                          <span className="truncate">{currentUser.name}</span>
+                          {(currentUser.isAdmin || currentUser.role === 'admin') && (
+                            <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">
+                              ADMIN
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                         <div className="mt-1.5">
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                            currentPlan === 'pro'
+                            currentUser.isAdmin || currentUser.role === 'admin'
+                              ? 'bg-amber-400 text-slate-950'
+                              : currentPlan === 'pro'
                               ? 'bg-amber-100 text-amber-900'
                               : currentPlan === 'basic'
                               ? 'bg-sky-100 text-sky-900'
                               : 'bg-slate-100 text-slate-700'
                           }`}>
-                            Plan: {currentPlan === 'pro' ? 'Pro ($5.99/mo)' : currentPlan === 'basic' ? 'Basic ($2.99/mo)' : 'Free'}
+                            {currentUser.isAdmin || currentUser.role === 'admin' ? '👑 Master Admin (Full Access)' : `Plan: ${currentPlan === 'pro' ? 'Pro ($5.99/mo)' : currentPlan === 'basic' ? 'Basic ($2.99/mo)' : 'Free'}`}
                           </span>
                         </div>
                       </div>

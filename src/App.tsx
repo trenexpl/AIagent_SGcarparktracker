@@ -388,8 +388,30 @@ export default function App() {
     setAlerts(storageService.getAlerts());
   };
 
-  // Navigation launch
+  // Check if current user has active paid plan or admin access for navigation & favorites
+  const isPaidUser = !!currentUser && (currentUser.isAdmin || currentUser.role === 'admin' || currentUser.plan === 'basic' || currentUser.plan === 'pro');
+
+  // Navigation launch - strictly gated by login & paid subscription / admin access
   const handleNavigate = (cp: Carpark) => {
+    if (!currentUser) {
+      handleOpenAuth(
+        'login',
+        'Turn-by-turn navigation is a paid feature. Please log in or create a driver account.'
+      );
+      setAlertNotificationBanner('🔒 Navigation is locked. Sign in to an account with a paid plan to use GPS directions.');
+      setTimeout(() => setAlertNotificationBanner(null), 5000);
+      return;
+    }
+
+    if (!currentUser.isAdmin && currentUser.role !== 'admin' && currentUser.plan === 'free') {
+      handleOpenPayment('basic');
+      setAlertNotificationBanner(
+        '⭐ Turn-by-turn GPS navigation requires an active Basic ($2.99/mo) or Pro ($5.99/mo) plan. Please upgrade to unlock.'
+      );
+      setTimeout(() => setAlertNotificationBanner(null), 5000);
+      return;
+    }
+
     storageService.recordNavigationUsage(cp.id);
     setNavigatingCarpark(cp);
   };
@@ -664,11 +686,22 @@ export default function App() {
                     onOpenDetails={(cp) => setDetailsCarpark(cp)}
                     onToggleSave={handleToggleSave}
                     savedCarparkIds={savedCarparks.map((s) => s.carparkId)}
+                    hasNavAccess={isPaidUser}
                   />
                 </div>
               ) : (
                 /* High-Density Carpark List View */
                 <div className="space-y-4 max-w-3xl mx-auto w-full py-2">
+                  {filteredCarparks.length > 0 && (
+                    <RecommendedBanner
+                      carpark={filteredCarparks[0]}
+                      destinationName={activeDestination.name}
+                      onNavigate={() => handleNavigate(filteredCarparks[0])}
+                      onViewDetails={() => setDetailsCarpark(filteredCarparks[0])}
+                      hasNavAccess={isPaidUser}
+                    />
+                  )}
+
                   <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
                     <span>{filteredCarparks.length} Carparks Sorted by {filters.sortBy}</span>
                     <button
@@ -688,6 +721,7 @@ export default function App() {
                       isSaved={savedCarparks.some((s) => s.carparkId === cp.id)}
                       isCompared={comparedCarparks.some((c) => c.id === cp.id)}
                       hasAlert={alerts.some((a) => a.carparkId === cp.id)}
+                      hasNavAccess={isPaidUser}
                       onSelect={() => {
                         setSelectedCarpark(cp);
                         setMapPageViewMode('map');
@@ -819,6 +853,16 @@ export default function App() {
             setAlertCarpark(cp);
           }}
           onRecordUsage={(id) => storageService.recordNavigationUsage(id)}
+          currentUser={currentUser}
+          hasNavAccess={isPaidUser}
+          onOpenPayment={(plan) => {
+            setNavigatingCarpark(null);
+            handleOpenPayment(plan);
+          }}
+          onOpenAuth={() => {
+            setNavigatingCarpark(null);
+            handleOpenAuth('login', 'Turn-by-turn navigation requires logging in with a paid plan.');
+          }}
         />
       )}
 
@@ -837,6 +881,9 @@ export default function App() {
             setDetailsCarpark(null);
             setAlertCarpark(cp);
           }}
+          isCompared={comparedCarparks.some((c) => c.id === detailsCarpark.id)}
+          onToggleCompare={handleToggleCompare}
+          hasNavAccess={isPaidUser}
         />
       )}
 
@@ -853,19 +900,17 @@ export default function App() {
       {/* 4. Side-by-Side Carpark Comparison Modal */}
       {isCompareModalOpen && (
         <CarparkComparison
-          comparedCarparks={comparedCarparks}
+          carparks={comparedCarparks}
           onClose={() => setIsCompareModalOpen(false)}
-          onRemoveFromCompare={(cpId) =>
+          onRemove={(cpId) =>
             setComparedCarparks((prev) => prev.filter((c) => c.id !== cpId))
           }
-          onNavigate={(cp) => {
+          onClearAll={() => setComparedCarparks([])}
+          onChooseAndNavigate={(cp) => {
             setIsCompareModalOpen(false);
             handleNavigate(cp);
           }}
-          onViewDetails={(cp) => {
-            setIsCompareModalOpen(false);
-            setDetailsCarpark(cp);
-          }}
+          hasNavAccess={isPaidUser}
         />
       )}
 

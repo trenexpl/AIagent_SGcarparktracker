@@ -1,6 +1,6 @@
 import React from 'react';
 import { Carpark } from '../types/carpark';
-import { Sparkles, Navigation, ArrowRight, ShieldCheck, Footprints, DollarSign, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Sparkles, Navigation, ArrowRight, ShieldCheck, Footprints, DollarSign, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
 import { formatDistance } from '../services/parkingService';
 
 interface RecommendedBannerProps {
@@ -8,6 +8,7 @@ interface RecommendedBannerProps {
   destinationName?: string;
   onNavigate: () => void;
   onViewDetails: () => void;
+  hasNavAccess?: boolean;
 }
 
 export const RecommendedBanner: React.FC<RecommendedBannerProps> = ({
@@ -15,6 +16,7 @@ export const RecommendedBanner: React.FC<RecommendedBannerProps> = ({
   destinationName,
   onNavigate,
   onViewDetails,
+  hasNavAccess = true,
 }) => {
   return (
     <div
@@ -87,17 +89,31 @@ export const RecommendedBanner: React.FC<RecommendedBannerProps> = ({
           <button
             id="btn-recommended-navigate"
             onClick={onNavigate}
-            className="py-3.5 px-6 bg-sky-500 hover:bg-sky-400 active:scale-98 text-slate-950 font-black text-sm rounded-2xl shadow-lg shadow-sky-500/30 transition-all flex items-center justify-center gap-2"
+            className={`py-3.5 px-6 font-black text-sm rounded-2xl shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              hasNavAccess
+                ? 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-sky-500/30'
+                : 'bg-slate-800 hover:bg-slate-700 text-white border border-amber-400/40 shadow-slate-900/50'
+            }`}
           >
-            <Navigation className="w-4 h-4 fill-slate-950" />
-            <span>Navigate Here Now</span>
-            <ArrowRight className="w-4 h-4" />
+            {hasNavAccess ? (
+              <>
+                <Navigation className="w-4 h-4 fill-slate-950" />
+                <span>Navigate Here Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>Navigate (Paid Plan)</span>
+                <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-black">UNLOCK</span>
+              </>
+            )}
           </button>
 
           <button
             id="btn-recommended-details"
             onClick={onViewDetails}
-            className="py-2.5 px-4 bg-white/10 hover:bg-white/20 active:scale-98 text-white font-bold text-xs rounded-xl border border-white/20 transition-all flex items-center justify-center gap-1"
+            className="py-2.5 px-4 bg-white/10 hover:bg-white/20 active:scale-98 text-white font-bold text-xs rounded-xl border border-white/20 transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             <span>View Full Rate Breakdown</span>
             <ChevronRight className="w-3.5 h-3.5" />

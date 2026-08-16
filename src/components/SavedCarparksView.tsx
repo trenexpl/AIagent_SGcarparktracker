@@ -109,13 +109,15 @@ export const SavedCarparksView: React.FC<SavedCarparksViewProps> = ({
             {/* Account & Plan Status Pill */}
             {currentUser ? (
               <span className={`text-xs px-2.5 py-0.5 rounded-full font-black flex items-center gap-1 ${
-                currentPlan === 'pro'
+                currentUser.isAdmin || currentUser.role === 'admin'
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-300 text-slate-950 shadow-xs'
+                  : currentPlan === 'pro'
                   ? 'bg-amber-400 text-slate-950'
                   : currentPlan === 'basic'
                   ? 'bg-sky-400 text-slate-950'
                   : 'bg-slate-700 text-slate-200'
               }`}>
-                {currentPlan === 'pro' ? '★ Pro Unlimited' : currentPlan === 'basic' ? 'Basic (5 Spots)' : 'Free Plan'}
+                {currentUser.isAdmin || currentUser.role === 'admin' ? '👑 Master Admin (Full Access)' : currentPlan === 'pro' ? '★ Pro Unlimited' : currentPlan === 'basic' ? 'Basic (5 Spots)' : 'Free Plan'}
               </span>
             ) : (
               <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-500/30 text-rose-300 border border-rose-400/30">
@@ -320,15 +322,15 @@ export const SavedCarparksView: React.FC<SavedCarparksViewProps> = ({
                 <ul className="space-y-2.5 text-xs text-slate-700">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-sky-600 shrink-0 font-bold" />
+                    <span><strong>Full GPS turn-by-turn navigation</strong> (Google, Apple, Waze, Citymapper)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-sky-600 shrink-0 font-bold" />
                     <span>Save up to 5 favorite locations in your account</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-sky-600 shrink-0 font-bold" />
                     <span>Live lot availability and rate updates</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-sky-600 shrink-0 font-bold" />
-                    <span>1-tap instant navigation to saved spots</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-sky-600 shrink-0 font-bold" />
@@ -387,15 +389,15 @@ export const SavedCarparksView: React.FC<SavedCarparksViewProps> = ({
                 <ul className="space-y-2.5 text-xs text-slate-700">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-amber-600 shrink-0 font-bold" />
+                    <span><strong>Unlimited turn-by-turn GPS navigation</strong> across all apps</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-amber-600 shrink-0 font-bold" />
                     <span><strong>Unlimited favorite locations</strong> with no cap</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-amber-600 shrink-0 font-bold" />
-                    <span>Real-time LTA live lot occupancy sync</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-amber-600 shrink-0 font-bold" />
-                    <span>Instant 1-tap navigation &amp; route shortcuts</span>
+                    <span>Priority live lot occupancy alerts &amp; push notifications</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-amber-600 shrink-0 font-bold" />

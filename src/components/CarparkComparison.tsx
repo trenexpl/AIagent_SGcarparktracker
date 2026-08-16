@@ -1,6 +1,6 @@
 import React from 'react';
 import { Carpark } from '../types/carpark';
-import { X, Navigation, Check, Sparkles, Footprints, DollarSign, Shield, Zap, Clock, ArrowRight } from 'lucide-react';
+import { X, Navigation, Check, Sparkles, Footprints, DollarSign, Shield, Zap, Clock, ArrowRight, Lock } from 'lucide-react';
 import { formatDistance } from '../services/parkingService';
 
 interface CarparkComparisonProps {
@@ -9,6 +9,7 @@ interface CarparkComparisonProps {
   onClearAll: () => void;
   onChooseAndNavigate: (carpark: Carpark) => void;
   onClose: () => void;
+  hasNavAccess?: boolean;
 }
 
 export const CarparkComparison: React.FC<CarparkComparisonProps> = ({
@@ -17,6 +18,7 @@ export const CarparkComparison: React.FC<CarparkComparisonProps> = ({
   onClearAll,
   onChooseAndNavigate,
   onClose,
+  hasNavAccess = true,
 }) => {
   if (carparks.length === 0) return null;
 
@@ -195,14 +197,25 @@ export const CarparkComparison: React.FC<CarparkComparisonProps> = ({
                     <button
                       id={`btn-choose-compare-${cp.id}`}
                       onClick={() => onChooseAndNavigate(cp)}
-                      className={`w-full py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md ${
-                        isWinner
+                      className={`w-full py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer ${
+                        !hasNavAccess
+                          ? 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700'
+                          : isWinner
                           ? 'bg-sky-600 hover:bg-sky-700 text-white'
                           : 'bg-slate-900 hover:bg-slate-800 text-white'
                       }`}
                     >
-                      <Navigation className="w-4 h-4" />
-                      <span>Choose This Carpark</span>
+                      {hasNavAccess ? (
+                        <>
+                          <Navigation className="w-4 h-4" />
+                          <span>Choose This Carpark</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Choose &amp; Navigate (Paid Plan)</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

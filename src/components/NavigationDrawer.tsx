@@ -1,5 +1,5 @@
 import React from 'react';
-import { Carpark } from '../types/carpark';
+import { Carpark, UserAccount } from '../types/carpark';
 import { 
   Navigation, 
   X, 
@@ -7,13 +7,16 @@ import {
   Clock, 
   Compass, 
   ExternalLink, 
-  Star,
+  Star, 
   Bell, 
   Sparkles, 
   ShieldCheck, 
-  AlertCircle,
-  Car,
-  CheckCircle2
+  AlertCircle, 
+  Car, 
+  CheckCircle2,
+  Lock,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { formatDistance, getNavigationLinks } from '../services/parkingService';
 
@@ -25,6 +28,10 @@ interface NavigationDrawerProps {
   onToggleSave: (carpark: Carpark) => void;
   onOpenAlert: (carpark: Carpark) => void;
   onRecordUsage?: (carparkId: string) => void;
+  currentUser?: UserAccount | null;
+  hasNavAccess?: boolean;
+  onOpenPayment?: (plan?: 'basic' | 'pro') => void;
+  onOpenAuth?: () => void;
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
@@ -35,10 +42,23 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onToggleSave,
   onOpenAlert,
   onRecordUsage,
+  currentUser,
+  hasNavAccess = true,
+  onOpenPayment,
+  onOpenAuth,
 }) => {
   const navLinks = getNavigationLinks(carpark, destinationName);
 
   const handleLaunchNav = (url: string) => {
+    if (!hasNavAccess) {
+      if (!currentUser) {
+        onOpenAuth?.();
+      } else {
+        onOpenPayment?.('basic');
+      }
+      return;
+    }
+
     if (onRecordUsage) {
       onRecordUsage(carpark.id);
     }
@@ -137,16 +157,61 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
           {/* Primary App Launch CTA */}
           <div className="space-y-2">
-            <label className="text-xs font-extrabold uppercase tracking-wide text-slate-500 block">
-              Launch Turn-by-Turn Navigation:
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold uppercase tracking-wide text-slate-500 block">
+                Launch Turn-by-Turn Navigation:
+              </label>
+              {!hasNavAccess && (
+                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-black flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-amber-700" />
+                  Paid Plan Required
+                </span>
+              )}
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {!hasNavAccess && (
+              <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-700 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-amber-400 text-slate-950 shrink-0">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white">GPS Navigation is Locked</h4>
+                    <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                      Turn-by-turn navigation via Google Maps, Apple Maps, Waze &amp; Citymapper requires an active <strong>Basic ($2.99/mo)</strong> or <strong>Pro ($5.99/mo)</strong> subscription.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  {!currentUser ? (
+                    <button
+                      onClick={() => onOpenAuth?.()}
+                      className="flex-1 py-2.5 px-4 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                    >
+                      <span>Log In / Sign Up to Unlock</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onOpenPayment?.('basic')}
+                      className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-slate-950" />
+                      <span>Upgrade Plan ($2.99/mo)</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2.5 ${!hasNavAccess ? 'opacity-50 pointer-events-none' : ''}`}>
               {/* Google Maps */}
               <button
                 id="nav-btn-google-maps"
                 onClick={() => handleLaunchNav(navLinks.googleMaps)}
-                className="p-3.5 bg-slate-900 hover:bg-slate-800 active:scale-98 text-white rounded-2xl shadow-md transition-all flex items-center justify-between group"
+                className="p-3.5 bg-slate-900 hover:bg-slate-800 active:scale-98 text-white rounded-2xl shadow-md transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 text-left">
                   <div className="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center text-white font-black text-xs">
@@ -164,7 +229,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 id="nav-btn-apple-maps"
                 onClick={() => handleLaunchNav(navLinks.appleMaps)}
-                className="p-3.5 bg-slate-900 hover:bg-slate-800 active:scale-98 text-white rounded-2xl shadow-md transition-all flex items-center justify-between group"
+                className="p-3.5 bg-slate-900 hover:bg-slate-800 active:scale-98 text-white rounded-2xl shadow-md transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 text-left">
                   <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white font-black text-xs">
@@ -182,7 +247,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 id="nav-btn-waze"
                 onClick={() => handleLaunchNav(navLinks.waze)}
-                className="p-3.5 bg-white hover:bg-slate-50 active:scale-98 text-slate-900 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex items-center justify-between group"
+                className="p-3.5 bg-white hover:bg-slate-50 active:scale-98 text-slate-900 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 text-left">
                   <div className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-black text-xs">
@@ -200,7 +265,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 id="nav-btn-citymapper"
                 onClick={() => handleLaunchNav(navLinks.citymapper)}
-                className="p-3.5 bg-white hover:bg-slate-50 active:scale-98 text-slate-900 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex items-center justify-between group"
+                className="p-3.5 bg-white hover:bg-slate-50 active:scale-98 text-slate-900 border-2 border-slate-200 hover:border-slate-300 rounded-2xl shadow-xs transition-all flex items-center justify-between group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 text-left">
                   <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">

@@ -15,7 +15,8 @@ import {
   Layers,
   MapPin,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { formatDistance, getNavigationLinks } from '../services/parkingService';
 
@@ -26,8 +27,9 @@ interface CarparkDetailsModalProps {
   isSaved: boolean;
   onToggleSave: (carpark: Carpark) => void;
   onOpenAlert: (carpark: Carpark) => void;
-  isCompared: boolean;
-  onToggleCompare: (carpark: Carpark) => void;
+  isCompared?: boolean;
+  onToggleCompare?: (carpark: Carpark) => void;
+  hasNavAccess?: boolean;
 }
 
 export const CarparkDetailsModal: React.FC<CarparkDetailsModalProps> = ({
@@ -37,8 +39,9 @@ export const CarparkDetailsModal: React.FC<CarparkDetailsModalProps> = ({
   isSaved,
   onToggleSave,
   onOpenAlert,
-  isCompared,
+  isCompared = false,
   onToggleCompare,
+  hasNavAccess = true,
 }) => {
   if (!carpark) return null;
 
@@ -292,10 +295,23 @@ export const CarparkDetailsModal: React.FC<CarparkDetailsModalProps> = ({
           <button
             id="details-btn-navigate-primary"
             onClick={() => onNavigate(carpark)}
-            className="py-3 px-6 bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center gap-2 ml-auto"
+            className={`py-3 px-5 sm:px-6 font-extrabold text-sm rounded-xl shadow-lg active:scale-98 transition-all flex items-center gap-2 ml-auto cursor-pointer ${
+              hasNavAccess
+                ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700'
+            }`}
           >
-            <Navigation className="w-4 h-4" />
-            <span>Navigate Here Now</span>
+            {hasNavAccess ? (
+              <>
+                <Navigation className="w-4 h-4" />
+                <span>Navigate Here Now</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>Navigate (Paid Plan Required)</span>
+              </>
+            )}
           </button>
         </div>
       </div>

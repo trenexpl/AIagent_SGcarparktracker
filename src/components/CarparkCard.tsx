@@ -13,7 +13,8 @@ import {
   Check, 
   ChevronRight,
   TrendingDown,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { formatDistance } from '../services/parkingService';
 
@@ -30,6 +31,7 @@ interface CarparkCardProps {
   onOpenAlert: () => void;
   onOpenDetails: () => void;
   isCompareDisabled?: boolean;
+  hasNavAccess?: boolean;
 }
 
 export const CarparkCard: React.FC<CarparkCardProps> = ({
@@ -45,6 +47,7 @@ export const CarparkCard: React.FC<CarparkCardProps> = ({
   onOpenAlert,
   onOpenDetails,
   isCompareDisabled = false,
+  hasNavAccess = true,
 }) => {
   const freePercentage =
     carpark.totalLots > 0
@@ -326,10 +329,25 @@ export const CarparkCard: React.FC<CarparkCardProps> = ({
             <button
               id={`card-navigate-btn-${carpark.id}`}
               onClick={onNavigate}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-95 text-white text-xs font-extrabold shadow-md transition-all flex items-center gap-1.5"
+              title={hasNavAccess ? "Start Turn-by-Turn GPS Navigation" : "Navigation Locked (Paid Plan Required - Click to unlock)"}
+              className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer ${
+                hasNavAccess
+                  ? 'bg-sky-600 hover:bg-sky-700 text-white'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700'
+              }`}
             >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Navigate</span>
+              {hasNavAccess ? (
+                <>
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Navigate</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Navigate</span>
+                  <span className="text-[9px] bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-black tracking-tight">PAID</span>
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Carpark, AvailabilityLevel } from '../types/carpark';
-import { Navigation, Layers, Compass, Crosshair, Sparkles, ExternalLink, Check, Car, ChevronLeft, ChevronRight, Zap, Star, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Navigation, Layers, Compass, Crosshair, Sparkles, ExternalLink, Check, Car, ChevronLeft, ChevronRight, Zap, Star, X, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 interface InteractiveMapProps {
   carparks: Carpark[];
@@ -14,6 +14,7 @@ interface InteractiveMapProps {
   onOpenDetails?: (carpark: Carpark) => void;
   onToggleSave?: (carpark: Carpark) => void;
   savedCarparkIds?: string[];
+  hasNavAccess?: boolean;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -27,6 +28,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onOpenDetails,
   onToggleSave,
   savedCarparkIds = [],
+  hasNavAccess = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -291,8 +293,10 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         </div>
 
         <div class="flex items-center gap-1.5">
-          <button id="pin-popup-nav-${cp.id}" class="flex-1 py-1.5 px-2.5 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-black rounded-lg text-xs flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all">
-            <span>🚗 Navigate</span>
+          <button id="pin-popup-nav-${cp.id}" class="flex-1 py-1.5 px-2.5 ${
+            hasNavAccess ? 'bg-sky-600 hover:bg-sky-700' : 'bg-slate-900 hover:bg-slate-800'
+          } active:scale-95 text-white font-black rounded-lg text-xs flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-all">
+            <span>${hasNavAccess ? '🚗 Navigate' : '🔒 Navigate (Paid)'}</span>
           </button>
           ${
             onOpenDetails
@@ -600,10 +604,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <button
                   id={`map-drawer-nav-btn-${activeDrawerCarpark.id}`}
                   onClick={() => onNavigate(activeDrawerCarpark)}
-                  className="flex-1 py-1.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-black rounded-xl shadow-md shadow-sky-600/20 transition-all flex items-center justify-center gap-1.5 text-xs"
+                  className={`flex-1 py-1.5 px-3 font-black rounded-xl shadow-md active:scale-98 transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer ${
+                    hasNavAccess
+                      ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-600/20'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700'
+                  }`}
                 >
-                  <Navigation className="w-3.5 h-3.5 fill-white" />
-                  <span>Navigate</span>
+                  {hasNavAccess ? (
+                    <>
+                      <Navigation className="w-3.5 h-3.5 fill-white" />
+                      <span>Navigate</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Navigate</span>
+                      <span className="text-[9px] bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-black">PAID</span>
+                    </>
+                  )}
                 </button>
 
                 {onOpenDetails && (
