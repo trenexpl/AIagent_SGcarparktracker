@@ -7,14 +7,10 @@ import {
   Star, 
   ShieldCheck, 
   ArrowRight, 
-  Sparkles, 
-  CheckCircle2, 
   AlertCircle,
-  Car,
   Phone,
   MapPin,
-  Database,
-  Check
+  Database
 } from 'lucide-react';
 import { UserAccount } from '../types/carpark';
 import { storageService } from '../services/storageService';
@@ -104,25 +100,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsLoading(false);
       }
     }, 300);
-  };
-
-  const handleFastDemoLogin = (emailPreset: string, passwordPreset: string = 'password123', namePreset?: string) => {
-    setErrorMsg(null);
-    setIsLoading(true);
-    setTimeout(() => {
-      const res = storageService.logIn(emailPreset, passwordPreset);
-      if (res.user) {
-        onAuthSuccess(res.user);
-      } else if (res.error) {
-        setErrorMsg(res.error);
-      } else if (namePreset) {
-        const created = storageService.signUp(namePreset, emailPreset, passwordPreset, 'Singapore Central Area', '+65 9123 4567');
-        if (created.user) {
-          onAuthSuccess(created.user);
-        }
-      }
-      setIsLoading(false);
-    }, 200);
   };
 
   return (
@@ -330,59 +307,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* Quick Demo Logins */}
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <span className="text-[11px] font-extrabold uppercase text-slate-400 block text-center">
-              Quick 1-Click Sign In:
-            </span>
-            
-            {/* Master Admin Account (Full Access) */}
-            <button
-              type="button"
-              id="btn-quick-login-admin"
-              onClick={() => handleFastDemoLogin('trenexpl@gmail.com', 'Test123', 'Admin (trenexpl)')}
-              className="w-full p-2.5 rounded-xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-50 to-amber-100/50 hover:from-amber-100 hover:to-amber-200/60 text-left transition-all cursor-pointer group shadow-2xs"
-            >
-              <div className="text-xs font-black text-slate-950 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <span className="text-sm">👑</span>
-                  <span>Master Admin (trenexpl@gmail.com)</span>
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black">
-                  Full Access
-                </span>
-              </div>
-              <div className="text-[10px] text-amber-900/80 mt-0.5 flex items-center justify-between">
-                <span>Password: Test123 • Synced to Supabase</span>
-                <span className="font-semibold text-amber-800 underline">Click to sign in</span>
-              </div>
-            </button>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleFastDemoLogin('sarah.tan@driver.sg', 'password123', 'Sarah Tan')}
-                className="p-2.5 rounded-xl border border-slate-200 hover:border-sky-300 bg-slate-50 hover:bg-sky-50 text-left transition-all cursor-pointer group"
-              >
-                <div className="text-xs font-black text-slate-900 group-hover:text-sky-700 flex items-center justify-between">
-                  <span>Sarah Tan</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 font-bold text-slate-700">Free</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">+65 8234 5678</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleFastDemoLogin('kenji.pro@driver.sg', 'password123', 'Kenji Tan (Pro)')}
-                className="p-2.5 rounded-xl border border-amber-200 hover:border-amber-300 bg-amber-50/50 hover:bg-amber-50 text-left transition-all cursor-pointer group"
-              >
-                <div className="text-xs font-black text-slate-900 group-hover:text-amber-700 flex items-center justify-between">
-                  <span>Kenji Tan</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-200 font-bold text-amber-900">Pro</span>
-                </div>
-                <div className="text-[10px] text-amber-700 mt-0.5">+65 9876 5432</div>
-              </button>
-            </div>
+          {/* Toggle between Sign In and Sign Up */}
+          <div className="pt-3 border-t border-slate-100 text-center">
+            {mode === 'login' ? (
+              <p className="text-xs text-slate-500">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signup');
+                    setErrorMsg(null);
+                  }}
+                  className="font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer"
+                >
+                  Create one now
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                Already registered an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg(null);
+                  }}
+                  className="font-bold text-sky-600 hover:text-sky-700 hover:underline cursor-pointer"
+                >
+                  Sign in here
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>

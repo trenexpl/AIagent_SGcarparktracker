@@ -72,7 +72,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlan, SubscriptionPlanDetail
   }
 };
 
-// Seed demo user accounts for immediate testing
+// Initial Master Admin account definition
 const INITIAL_DEMO_USERS: UserAccount[] = [
   {
     id: 'user-admin-master',
@@ -108,56 +108,6 @@ const INITIAL_DEMO_USERS: UserAccount[] = [
       }
     ],
     createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
-    supabaseSynced: true,
-  },
-  {
-    id: 'user-demo-1',
-    name: 'Sarah Tan',
-    email: 'sarah.tan@driver.sg',
-    address: 'Blk 128 Toa Payoh Lorong 1, #08-22, Singapore 310128',
-    contactNumber: '+65 8234 5678',
-    password: 'password123',
-    plan: 'free',
-    isAdmin: false,
-    role: 'driver',
-    savedCarparks: [],
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    supabaseSynced: true,
-  },
-  {
-    id: 'user-demo-2',
-    name: 'Kenji Tan (Pro Driver)',
-    email: 'kenji.pro@driver.sg',
-    address: '88 River Valley Road, #15-02, Singapore 179033',
-    contactNumber: '+65 9876 5432',
-    password: 'password123',
-    plan: 'pro',
-    isAdmin: false,
-    role: 'driver',
-    subscriptionStartDate: new Date(Date.now() - 86400000 * 12).toISOString(),
-    subscriptionRenewsAt: new Date(Date.now() + 86400000 * 18).toISOString(),
-    lastPaymentMethod: 'Visa •••• 4242',
-    savedCarparks: [
-      {
-        id: 'saved-init-1',
-        carparkId: 'orchard-ion',
-        carparkName: 'ION Orchard Carpark',
-        address: '2 Orchard Turn, Singapore 238801',
-        savedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        frequencyCount: 8,
-        notes: 'Best parking for Orchard shopping & MRT',
-      },
-      {
-        id: 'saved-init-2',
-        carparkId: 'suntec-city',
-        carparkName: 'Suntec City (Mall & Convention)',
-        address: '3 Temasek Boulevard, Singapore 038983',
-        savedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-        frequencyCount: 4,
-        notes: 'Fast EV charger on B3 Yellow Zone',
-      }
-    ],
-    createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
     supabaseSynced: true,
   }
 ];
@@ -414,9 +364,10 @@ export const storageService = {
     let match = allUsers.find((u) => u.email.toLowerCase() === trimmedEmail);
 
     if (!match) {
-      // If user doesn't exist, create a new free driver account smoothly
-      const created = this.signUp(email.split('@')[0] || 'Driver', trimmedEmail, password);
-      return created;
+      return {
+        success: false,
+        error: 'No account found with this email address. Please switch to the Sign Up tab to create your account.',
+      };
     }
 
     if (match.password && password && match.password !== password) {
