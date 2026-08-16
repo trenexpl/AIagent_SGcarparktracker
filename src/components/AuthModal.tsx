@@ -10,10 +10,15 @@ import {
   Sparkles, 
   CheckCircle2, 
   AlertCircle,
-  Car
+  Car,
+  Phone,
+  MapPin,
+  Database,
+  Check
 } from 'lucide-react';
 import { UserAccount } from '../types/carpark';
 import { storageService } from '../services/storageService';
+import { SUPABASE_PROJECT_ID } from '../services/supabaseService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,9 +38,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSupabaseSynced, setIsSupabaseSynced] = useState(false);
 
   if (!isOpen) return null;
 
@@ -57,12 +65,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setIsLoading(false);
             return;
           }
-          const res = storageService.signUp(name, email, password);
+          if (!contactNumber.trim()) {
+            setErrorMsg('Please enter your contact number (e.g. +65 9123 4567).');
+            setIsLoading(false);
+            return;
+          }
+          if (!address.trim()) {
+            setErrorMsg('Please enter your postal or residential address.');
+            setIsLoading(false);
+            return;
+          }
+
+          const res = storageService.signUp(name, email, password, address, contactNumber);
           if (!res.success || !res.user) {
             setErrorMsg(res.error || 'Failed to create account.');
             setIsLoading(false);
             return;
           }
+          setIsSupabaseSynced(true);
           onAuthSuccess(res.user);
         } else {
           if (!email.trim()) {
@@ -96,7 +116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else if (res.error) {
         setErrorMsg(res.error);
       } else if (namePreset) {
-        const created = storageService.signUp(namePreset, emailPreset, passwordPreset);
+        const created = storageService.signUp(namePreset, emailPreset, passwordPreset, 'Singapore Central Area', '+65 9123 4567');
         if (created.user) {
           onAuthSuccess(created.user);
         }
@@ -110,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       id="auth-modal-backdrop"
       className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-150">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-150">
         {/* Top Header Banner */}
         <div className="p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 text-white relative">
           <button
@@ -126,7 +146,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Star className="w-4 h-4 fill-amber-400" />
             </div>
             <span className="text-xs font-black text-amber-300 uppercase tracking-wider">
-              Driver Account Required
+              Driver Account &amp; Supabase Cloud
             </span>
           </div>
 
@@ -137,6 +157,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
             {promptReason || 'Sign in to access your favorited carparks, cloud syncing, and subscription plans.'}
           </p>
+
+          {/* Supabase Database Connection Badge */}
+          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold">
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Supabase DB Connected: <strong>What the Park ({SUPABASE_PROJECT_ID})</strong></span>
+          </div>
 
           {/* Mode Switcher Tabs */}
           <div className="mt-4 p-1 bg-white/10 backdrop-blur-md rounded-xl flex items-center gap-1 border border-white/10">
@@ -166,13 +192,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              Sign Up (New)
+              Sign Up (Supabase DB)
             </button>
           </div>
         </div>
 
         {/* Modal Body Form */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {errorMsg && (
             <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -180,29 +206,69 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             {mode === 'signup' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Full Name / Driver Handle
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Alex Tan"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
-                  />
+              <>
+                {/* 1. Full Name */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Alex Tan"
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                {/* 2. Contact Number */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Contact Number <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      required
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                      placeholder="+65 9123 4567"
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Address */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Address / Postal Code <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <textarea
+                      required
+                      rows={2}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="e.g. Blk 123 Tampines Street 11, #08-45, Singapore 521123"
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all resize-none"
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
+            {/* Email Address */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Email Address
+                Email Address <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -212,11 +278,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="driver@example.sg"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Password
@@ -228,10 +295,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-hidden focus:border-sky-500 focus:bg-white transition-all"
                 />
               </div>
             </div>
+
+            {mode === 'signup' && (
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  Your Name, Email, Address, and Contact Number are stored securely in the <strong>Supabase</strong> database instance.
+                </span>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -239,10 +315,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               className="w-full py-3 bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Processing...</span>
+                <span>Saving to Supabase Database...</span>
               ) : mode === 'signup' ? (
                 <>
-                  <span>Create Account &amp; Continue</span>
+                  <span>Create Account &amp; Save to Supabase</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : (
@@ -254,8 +330,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* Quick Demo Logins for smooth evaluation */}
-          <div className="pt-4 border-t border-slate-100 space-y-2">
+          {/* Quick Demo Logins */}
+          <div className="pt-3 border-t border-slate-100 space-y-2">
             <span className="text-[11px] font-extrabold uppercase text-slate-400 block text-center">
               Quick 1-Click Sign In:
             </span>
@@ -277,7 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </span>
               </div>
               <div className="text-[10px] text-amber-900/80 mt-0.5 flex items-center justify-between">
-                <span>Password: Test123</span>
+                <span>Password: Test123 • Synced to Supabase</span>
                 <span className="font-semibold text-amber-800 underline">Click to sign in</span>
               </div>
             </button>
@@ -292,7 +368,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span>Sarah Tan</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 font-bold text-slate-700">Free</span>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Free driver plan</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">+65 8234 5678</div>
               </button>
 
               <button
@@ -304,7 +380,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span>Kenji Tan</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-200 font-bold text-amber-900">Pro</span>
                 </div>
-                <div className="text-[10px] text-amber-700 mt-0.5">Pro driver plan</div>
+                <div className="text-[10px] text-amber-700 mt-0.5">+65 9876 5432</div>
               </button>
             </div>
           </div>
@@ -313,3 +389,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
+

@@ -223,7 +223,17 @@ export const Header: React.FC<HeaderProps> = ({
                           )}
                         </div>
                         <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
-                        <div className="mt-1.5">
+                        {currentUser.contactNumber && (
+                          <div className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+                            📞 {currentUser.contactNumber}
+                          </div>
+                        )}
+                        {currentUser.address && (
+                          <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5" title={currentUser.address}>
+                            📍 {currentUser.address}
+                          </div>
+                        )}
+                        <div className="mt-1.5 flex items-center justify-between gap-1">
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                             currentUser.isAdmin || currentUser.role === 'admin'
                               ? 'bg-amber-400 text-slate-950'
@@ -234,6 +244,10 @@ export const Header: React.FC<HeaderProps> = ({
                               : 'bg-slate-100 text-slate-700'
                           }`}>
                             {currentUser.isAdmin || currentUser.role === 'admin' ? '👑 Master Admin (Full Access)' : `Plan: ${currentPlan === 'pro' ? 'Pro ($5.99/mo)' : currentPlan === 'basic' ? 'Basic ($2.99/mo)' : 'Free'}`}
+                          </span>
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-1" title="Stored in Supabase Database">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Supabase
                           </span>
                         </div>
                       </div>

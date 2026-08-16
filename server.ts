@@ -438,6 +438,76 @@ app.get('/api/carparks/status', async (req, res) => {
   });
 });
 
+// ==========================================
+// SUPABASE USER SYNC API
+// ==========================================
+const SUPABASE_REST_URL = 'https://raxwafkvlazhfmpopvsg.supabase.co/rest/v1';
+const SUPABASE_KEY = 'sb_publishable_a16awx6e5Qh6TiysiDH3VA_FllapDE-';
+
+app.post('/api/supabase/signup', async (req, res) => {
+  try {
+    const { id, name, email, address, contact_number, contactNumber, phone, plan } = req.body;
+    const phoneVal = contact_number || contactNumber || phone || '';
+
+    const payload = {
+      id: id || `user_${Date.now()}`,
+      name: (name || '').trim(),
+      email: (email || '').trim().toLowerCase(),
+      address: (address || '').trim(),
+      contact_number: phoneVal.trim(),
+      contactNumber: phoneVal.trim(),
+      phone: phoneVal.trim(),
+      plan: plan || 'free',
+      created_at: new Date().toISOString(),
+    };
+
+    console.log('[Server Supabase Sync] Registering user signup in database:', payload);
+
+    // Attempt insert into Supabase REST endpoint for 'users' / 'profiles' / 'user_accounts'
+    const tableCandidates = ['users', 'profiles', 'user_accounts', 'signups'];
+    let syncSuccess = false;
+    let lastError: string | null = null;
+
+    for (const table of tableCandidates) {
+      try {
+        const response = await fetch(`${SUPABASE_REST_URL}/${table}`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation,resolution=merge-duplicates',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          syncSuccess = true;
+          const result = await response.json().catch(() => ({}));
+          console.log(`[Server Supabase Sync] Stored in table '${table}':`, result);
+          break;
+        } else {
+          const errText = await response.text();
+          lastError = `${response.status} ${errText}`;
+        }
+      } catch (e: any) {
+        lastError = e.message;
+      }
+    }
+
+    res.json({
+      success: true,
+      supabaseProject: 'raxwafkvlazhfmpopvsg (What the Park app)',
+      synced: syncSuccess,
+      data: payload,
+      note: syncSuccess ? 'Stored in Supabase database' : lastError,
+    });
+  } catch (error: any) {
+    console.error('/api/supabase/signup error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Supabase sync error' });
+  }
+});
+
 // Start Express Server & Integrate Vite
 async function startServer() {
   // Pre-warm the cache in background

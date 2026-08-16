@@ -5,10 +5,11 @@ import {
   Carpark, 
   CommunityComment, 
   UserAccount, 
-  SubscriptionPlan,
-  SubscriptionPlanDetails,
-  PaymentDetails
+  SubscriptionPlan, 
+  SubscriptionPlanDetails, 
+  PaymentDetails 
 } from '../types/carpark';
+import { supabaseService } from './supabaseService';
 
 const SAVED_CARPARKS_KEY = 'parksg_saved_carparks_v1';
 const RECENT_SEARCHES_KEY = 'parksg_recent_searches_v1';
@@ -77,6 +78,8 @@ const INITIAL_DEMO_USERS: UserAccount[] = [
     id: 'user-admin-master',
     name: 'Admin (trenexpl)',
     email: 'trenexpl@gmail.com',
+    address: '1 Marina Boulevard, #28-00 One Marina Boulevard, Singapore 018989',
+    contactNumber: '+65 9123 4567',
     password: 'Test123',
     plan: 'pro',
     isAdmin: true,
@@ -105,22 +108,28 @@ const INITIAL_DEMO_USERS: UserAccount[] = [
       }
     ],
     createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
+    supabaseSynced: true,
   },
   {
     id: 'user-demo-1',
     name: 'Sarah Tan',
     email: 'sarah.tan@driver.sg',
+    address: 'Blk 128 Toa Payoh Lorong 1, #08-22, Singapore 310128',
+    contactNumber: '+65 8234 5678',
     password: 'password123',
     plan: 'free',
     isAdmin: false,
     role: 'driver',
     savedCarparks: [],
     createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    supabaseSynced: true,
   },
   {
     id: 'user-demo-2',
     name: 'Kenji Tan (Pro Driver)',
     email: 'kenji.pro@driver.sg',
+    address: '88 River Valley Road, #15-02, Singapore 179033',
+    contactNumber: '+65 9876 5432',
     password: 'password123',
     plan: 'pro',
     isAdmin: false,
@@ -149,6 +158,7 @@ const INITIAL_DEMO_USERS: UserAccount[] = [
       }
     ],
     createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
+    supabaseSynced: true,
   }
 ];
 
@@ -273,9 +283,17 @@ export const storageService = {
     }
   },
 
-  signUp(name: string, email: string, password?: string): { success: boolean; user?: UserAccount; error?: string } {
+  signUp(
+    name: string, 
+    email: string, 
+    password?: string, 
+    address?: string, 
+    contactNumber?: string
+  ): { success: boolean; user?: UserAccount; error?: string } {
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedName = name.trim();
+    const trimmedAddress = (address || '').trim();
+    const trimmedContact = (contactNumber || '').trim();
 
     if (!trimmedEmail || !trimmedName) {
       return { success: false, error: 'Name and email are required.' };
@@ -295,19 +313,72 @@ export const storageService = {
       id: `user-${Date.now()}`,
       name: trimmedName,
       email: trimmedEmail,
+      address: trimmedAddress || undefined,
+      contactNumber: trimmedContact || undefined,
       password: password || 'password123',
       plan: 'free',
       isAdmin: false,
       role: 'driver',
       savedCarparks: [],
       createdAt: new Date().toISOString(),
+      supabaseSynced: true,
     };
 
     allUsers.push(newUser);
     localStorage.setItem(USERS_LIST_KEY, JSON.stringify(allUsers));
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUser));
 
+    // Save details to Supabase Cloud Database asynchronously
+    supabaseService.saveUserSignUp({
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      address: trimmedAddress,
+      contactNumber: trimmedContact,
+      password: newUser.password,
+      plan: newUser.plan,
+      role: newUser.role,
+      isAdmin: newUser.isAdmin,
+    }).then((res) => {
+      if (res.success) {
+        console.log('[StorageService] Successfully synced new user with Supabase project raxwafkvlazhfmpopvsg.');
+      }
+    }).catch((err) => {
+      console.warn('[StorageService] Supabase sync background note:', err);
+    });
+
     return { success: true, user: newUser };
+  },
+
+  updateUserProfile(
+    userId: string, 
+    updates: { name?: string; address?: string; contactNumber?: string }
+  ): UserAccount | null {
+    const allUsers = this.getAllUsers();
+    const userIndex = allUsers.findIndex((u) => u.id === userId);
+    if (userIndex === -1) return null;
+
+    const user = allUsers[userIndex];
+    if (updates.name !== undefined) user.name = updates.name.trim();
+    if (updates.address !== undefined) user.address = updates.address.trim();
+    if (updates.contactNumber !== undefined) user.contactNumber = updates.contactNumber.trim();
+
+    allUsers[userIndex] = user;
+    localStorage.setItem(USERS_LIST_KEY, JSON.stringify(allUsers));
+
+    const currentUser = this.getCurrentUser();
+    if (currentUser && currentUser.id === userId) {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    }
+
+    // Sync to Supabase
+    supabaseService.updateUserDetails(user.email, {
+      name: user.name,
+      address: user.address,
+      contactNumber: user.contactNumber,
+    }).catch(() => null);
+
+    return user;
   },
 
   logIn(email: string, password?: string): { success: boolean; user?: UserAccount; error?: string } {

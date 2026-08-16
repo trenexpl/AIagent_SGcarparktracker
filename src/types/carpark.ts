@@ -144,6 +144,8 @@ export interface UserAccount {
   id: string;
   email: string;
   name: string;
+  address?: string;
+  contactNumber?: string;
   password?: string;
   plan: SubscriptionPlan;
   isAdmin?: boolean;
@@ -153,6 +155,7 @@ export interface UserAccount {
   lastPaymentMethod?: string;
   savedCarparks: SavedCarparkItem[];
   createdAt: string;
+  supabaseSynced?: boolean;
 }
 
 export interface PaymentDetails {
