@@ -9,12 +9,10 @@ import {
   ArrowRight, 
   AlertCircle,
   Phone,
-  MapPin,
-  Database
+  MapPin
 } from 'lucide-react';
 import { UserAccount } from '../types/carpark';
 import { storageService } from '../services/storageService';
-import { SUPABASE_PROJECT_ID } from '../services/supabaseService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -123,7 +121,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Star className="w-4 h-4 fill-amber-400" />
             </div>
             <span className="text-xs font-black text-amber-300 uppercase tracking-wider">
-              Driver Account &amp; Supabase Cloud
+              Driver Account
             </span>
           </div>
 
@@ -134,12 +132,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <p className="text-xs text-slate-300 mt-1 leading-relaxed">
             {promptReason || 'Sign in to access your favorited carparks, cloud syncing, and subscription plans.'}
           </p>
-
-          {/* Supabase Database Connection Badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold">
-            <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Supabase DB Connected: <strong>What the Park ({SUPABASE_PROJECT_ID})</strong></span>
-          </div>
 
           {/* Mode Switcher Tabs */}
           <div className="mt-4 p-1 bg-white/10 backdrop-blur-md rounded-xl flex items-center gap-1 border border-white/10">
@@ -169,7 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-300 hover:text-white'
               }`}
             >
-              Sign Up (Supabase DB)
+              Sign Up
             </button>
           </div>
         </div>
@@ -281,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  Your Name, Email, Address, and Contact Number are stored securely in the <strong>Supabase</strong> database instance.
+                  Your Name, Email, Address, and Contact Number are stored securely.
                 </span>
               </div>
             )}
@@ -292,10 +284,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               className="w-full py-3 bg-sky-600 hover:bg-sky-700 active:scale-98 text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
-                <span>Saving to Supabase Database...</span>
+                <span>Processing...</span>
               ) : mode === 'signup' ? (
                 <>
-                  <span>Create Account &amp; Save to Supabase</span>
+                  <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : (
